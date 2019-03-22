@@ -82,7 +82,21 @@ RequestUtil.prototype.refreshAWSCredentials = function () {
   return window.fetch(url, params)
     .then((response) => {
       if (!response.ok) {
-        throw new Error(`Credential server response ${response.status}`)
+        if (response.status === 400) {
+          // Bad request
+          response.text().then((text) => {
+            if (text === 'Signed request body of the client timestamp is required.') {
+              throw new Error(`Server requires preciece time on client`)
+            }
+            throw new Error(`Credential server response ${response.status}`)
+          })
+          .catch(error => {
+            throw new Error(error)
+          });
+          return
+        } else {
+          throw new Error(`Credential server response ${response.status}`)
+        }
       }
       return response.arrayBuffer()
     })
